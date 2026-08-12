@@ -62,3 +62,13 @@ def test_add_route_expands_readout_without_changing_reservoir():
     assert router.W_out.shape == (8, original_output_dim + 1)
     assert np.array_equal(router.W_res, original_w_res)
     assert np.all(router.W_out[:, -1] == 0.0)
+
+
+def test_route_returns_valid_route_and_confidence():
+    router = make_router()
+    embedding = np.array([0.1, 0.2, 0.3, 0.4], dtype=np.float64)
+
+    route, confidence = router.route(embedding)
+
+    assert route in range(router.output_dim)
+    assert 0.0 <= confidence <= 1.0
