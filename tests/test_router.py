@@ -107,5 +107,15 @@ def test_route_rejects_wrong_input_dimension():
     router = make_router()
     embedding = np.array([0.1, 0.2, 0.3], dtype=np.float64)
 
+
+def test_router_initialization_is_deterministic():
+    router_a = make_router()
+    router_b = make_router()
+
+    assert np.array_equal(router_a.W_res, router_b.W_res)
+    assert np.array_equal(router_a.W_out, router_b.W_out)
+
+    
+
     with pytest.raises(ValueError, match="Input dimension mismatch"):
         router.route(embedding)
