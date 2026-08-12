@@ -83,7 +83,7 @@ The proof-of-concept for the core RC Router is fully implemented and ready for e
 ### Prerequisites
 Clone the repository and install dependencies (`numpy`):
 ```bash
-git clone https://github.com
+git clone https://github.com/Watney-0717/project-ares-tco.git
 cd project-ares-tco
 pip install numpy
 ```
