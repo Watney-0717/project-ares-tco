@@ -68,7 +68,7 @@ By leveraging an edge-side, ultra-small Embedding engine and confidence scoring 
 Unlike traditional classification networks or LLM-based gateways, Ares-TCO deploys **Reservoir Computing (RC)** at its core for three structural reasons:
 
 1. **Sub-Millisecond Overhead**
-   * Since the internal recurrent weights (\(W_{res}\)) are fixed and frozen, state transitions operate within a fraction of a millisecond even on pure CPU environments. The router will never become a new operational bottleneck.
+   * Since the internal recurrent weights ((W_{res})) are fixed and frozen, state transitions operate in the sub-millisecond range even on CPU environments. This keeps routing computationally lightweight and prevents the router from becoming a meaningful operational bottleneck.
 2. **No-Retraining Scalability (Dynamic Readout Expansion)**
    * When a new specialized model (Expert) is added to your infrastructure, you do *not* need to retrain the entire router network. You simply append a new slot to the linear readout layer (\(W_{out}\)).
 3. **Continuous Online Adaptation via RLS**
