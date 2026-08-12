@@ -70,5 +70,18 @@ def test_route_returns_valid_route_and_confidence():
 
     route, confidence = router.route(embedding)
 
+
+    def test_route_works_after_adding_route():
+    router = make_router()
+    embedding = np.array([0.1, 0.2, 0.3, 0.4], dtype=np.float64)
+
+    new_route = router.add_route()
+
+    route, confidence = router.route(embedding)
+
+    assert route in range(router.output_dim)
+    assert 0 <= route <= new_route
+    assert 0.0 <= confidence <= 1.0
+
     assert route in range(router.output_dim)
     assert 0.0 <= confidence <= 1.0
