@@ -1,5 +1,6 @@
-markdown# Project Ares-TCO
-> **Brain-Inspired Hybrid AI Orchestration Framework**
+markdown# Brain-inspired AI Router for LLMs to Slash Inference Costs – Ares-TCO
+
+**Brain-Inspired Hybrid AI Orchestration Framework**
 
 [![License: Apache 2.0](https://shields.io)](https://opensource.org)
 [![Python Version](https://shields.io)](https://python.org)
