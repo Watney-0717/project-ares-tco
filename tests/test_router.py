@@ -119,3 +119,28 @@ def test_router_initialization_is_deterministic():
 
     with pytest.raises(ValueError, match="Input dimension mismatch"):
         router.route(embedding)
+
+
+def test_add_route_can_expand_multiple_times():
+    router = make_router()
+
+    first_route = router.add_route()
+    second_route = router.add_route()
+
+    assert first_route == 3
+    assert second_route == 4
+    assert router.output_dim == 5
+    assert router.W_out.shape == (8, 5)
+    assert np.all(router.W_out[:, first_route] == 0.0)
+    assert np.all(router.W_out[:, second_route] == 0.0)
+
+
+
+
+
+
+
+
+
+
+
