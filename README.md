@@ -123,6 +123,10 @@ To ensure rigorous architectural integrity, this project segregates components i
 
 ---
 
+## 🔧 Implementation Status
+
+> **Implementation status:** This repository currently provides the core reservoir-computing routing prototype, including reservoir state generation, linear readout, confidence-based routing, and online RLS updates. Production integrations, model-specific execution layers, and deployment infrastructure are outside the scope of this prototype.
+
 ## ⚖️ 6. Core Design Principle: Quality First + Minimum Sufficient Compute
 
 Ares-TCO rejects any naive cost-cutting that compromises user experience. We formally define our framework optimization not as blind minimization, but as:
