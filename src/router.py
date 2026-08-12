@@ -108,8 +108,11 @@ class RCRouter:
     def _state(self, embedding: np.ndarray) -> np.ndarray:
         """Projects a single input embedding into the recursive reservoir state space."""
         u = np.asarray(embedding, dtype=np.float64).reshape(-1)
-      if u.shape != (self.input_dim,):
-   　　　 raise ValueError(f"Input dimension mismatch. Expected {(self.input_dim,)}, got {u.shape}")
+
+        if u.shape != (self.input_dim,):
+            raise ValueError(
+                f"Input dimension mismatch. Expected {(self.input_dim,)}, got {u.shape}"
+            )
 
         x = np.zeros(self.reservoir_dim, dtype=np.float64)
 
