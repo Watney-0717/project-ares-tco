@@ -183,7 +183,10 @@ class RCRouter:
         return route, confidence, probabilities
 
     def add_route(self) -> int:
-        """Appends a new output routing lane to the readout layer with zero downtime.
+    """Appends a new output routing lane to the readout layer.
+
+    Allows adding a new specialized model (Expert) without reservoir retraining.
+    """
 
         Allows instant scaling for newly added specialized models (Experts) without reservoir retraining.
 
