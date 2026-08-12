@@ -103,3 +103,9 @@ def test_rls_update_does_not_change_reservoir():
     assert not np.array_equal(router.W_out, original_w_out)
 
 
+def test_route_rejects_wrong_input_dimension():
+    router = make_router()
+    embedding = np.array([0.1, 0.2, 0.3], dtype=np.float64)
+
+    with pytest.raises(ValueError, match="Input dimension mismatch"):
+        router.route(embedding)
