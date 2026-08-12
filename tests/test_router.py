@@ -85,3 +85,21 @@ def test_route_returns_valid_route_and_confidence():
 
     assert route in range(router.output_dim)
     assert 0.0 <= confidence <= 1.0
+
+
+
+def test_rls_update_does_not_change_reservoir():
+    router = make_router()
+
+    embedding = np.array([0.1, 0.2, 0.3, 0.4], dtype=np.float64)
+    target = np.array([1.0, 0.0, 0.0], dtype=np.float64)
+
+    original_w_res = router.W_res.copy()
+    original_w_out = router.W_out.copy()
+
+    router.rls_update(embedding, target)
+
+    assert np.array_equal(router.W_res, original_w_res)
+    assert not np.array_equal(router.W_out, original_w_out)
+
+
