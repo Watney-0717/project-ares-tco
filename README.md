@@ -22,7 +22,7 @@ Project Ares-TCO solves this bottleneck. Our approach is not to build a larger A
 Inspired by Daniel Kahneman's Dual-Process Theory in cognitive science, Ares-TCO introduces a bi-level orchestration architecture to enterprise infrastructure:
 
 * **System 1: Edge Intuition Layer (Intuitive, Fast, Low-Compute)**
-  * Powered by the **RC Router**, a sub-millisecond, hyper-lightweight routing layer. It does *not* generate answers; instead, it projects the semantic embedding of a query to instantly predict which backend model is sufficient to handle the job.
+  * Powered by the **RC Router**, a sub-millisecond, lightweight routing layer. It does *not* generate answers; instead, it projects the semantic embedding of a query to  predict which backend model is sufficient to handle the job.
 * **System 2: High Resolution Layer (Logical, Deliberate, High-Compute)**
   * The ultimate defense line composed of high-resolution analyzers and frontier Reasoning Models. It is invoked *only* when System 1 detects ambiguity or low predictive confidence, ensuring surgical precision for compute-intensive tasks.
 
