@@ -14,10 +14,11 @@ python# Copyright 2026 Watney-0717
 
 """Project Ares-TCO: Reservoir Computing Router Core Module.
 
-This module maps low-cost semantic embedding vectors into a high-dimensional 
+This module maps low-cost semantic embedding vectors into a high-dimensional
 dynamical reservoir state space, providing sub-millisecond linear readout routing.
 It supports hot-swappable 'Expert Slot Expansion' and real-time online adaptation
-via Recursive Least Squares (RLS) without requiring system downtime or full backpropagation.
+via Recursive Least Squares (RLS) without requiring system downtime or full
+backpropagation.
 """
 
 import numpy as np
@@ -26,9 +27,9 @@ import numpy as np
 class RCRouter:
     """Autonomous Reservoir Computing Router acting as System 1 (Intuitive Layer).
 
-    Extracts non-linear contextual features from continuous or transient input 
-    embeddings to predict the optimal computation lane (Backend AI) under sub-millisecond 
-    latencies.
+    Extracts non-linear contextual features from continuous or transient input
+    embeddings to predict the optimal computation lane (Backend AI) under
+    sub-millisecond latencies.
     """
 
     def __init__(
@@ -49,25 +50,25 @@ class RCRouter:
         Parameters
         ----------
         input_dim : int
-            Dimensionality of incoming semantic vectors (e.g., 384 for tiny ONNX embeddings).
+            Dimensionality of incoming semantic vectors.
         reservoir_dim : int
             Size of the high-dimensional hidden dynamical state space.
         output_dim : int
-            Initial number of available backend routing targets (lanes).
+            Initial number of available backend routing targets.
         spectral_radius : float
-            Spectral radius of the reservoir matrix to guarantee the Echo State Property (ESP).
+            Spectral radius of the reservoir matrix.
         leak_rate : float
-            Leaking rate of the reservoir state update equations (0.0 < leak_rate <= 1.0).
+            Leaking rate of the reservoir state update.
         sparsity : float
-            Ratio of non-zero recurrent connections inside the reservoir network.
+            Ratio of non-zero recurrent connections.
         ridge : float
-            Regularization constant utilized to initialize the inverse correlation matrix.
+            Regularization constant for the inverse correlation matrix.
         seed : int
-            Random seed to ensure strict reproducibility across experimental setups.
+            Random seed for reproducibility.
         iterations : int
-            Number of internal recurrent state transitions per input embedding vector.
+            Number of recurrent state transitions per input embedding.
         fallback_threshold : float
-            Softmax confidence threshold below which queries escalate to System 2.
+            Confidence threshold below which queries escalate to System 2.
         """
         rng = np.random.default_rng(seed)
 
@@ -79,96 +80,146 @@ class RCRouter:
         self.iterations = iterations
         self.fallback_threshold = fallback_threshold
 
-        # Input-to-Reservoir fixed weight matrix (W_in)
-        self.W_in = rng.uniform(-0.1, 0.1, size=(reservoir_dim, input_dim))
+        # Fixed input-to-reservoir weight matrix.
+        self.W_in = rng.uniform(
+            -0.1,
+            0.1,
+            size=(reservoir_dim, input_dim),
+        )
 
-        # Raw recurrent Reservoir weight matrix (W_res)
-        W_res_raw = rng.uniform(-0.5, 0.5, size=(reservoir_dim, reservoir_dim))
+        # Fixed recurrent reservoir weight matrix.
+        W_res_raw = rng.uniform(
+            -0.5,
+            0.5,
+            size=(reservoir_dim, reservoir_dim),
+        )
 
-        # Apply network sparsity mask
+        # Apply network sparsity mask.
         mask = rng.random(W_res_raw.shape) < sparsity
         W_res_raw *= mask
 
-        # Strict spectral radius scaling to isolate and block complex type contagion
+        # Scale the recurrent matrix to the requested spectral radius.
         eigvals = np.linalg.eigvals(W_res_raw)
-        rho = np.max(np.abs(eigvals))  # Magnitude of the largest eigenvalue (float)
+        rho = np.max(np.abs(eigvals))
 
         if rho > 0:
-            # Force explicit float64 cast to purge complex type contagion from eigenvalues
-            self.W_res = (W_res_raw * (spectral_radius / rho)).astype(np.float64)
+            self.W_res = (
+                W_res_raw * (spectral_radius / rho)
+            ).astype(np.float64)
         else:
             self.W_res = W_res_raw.astype(np.float64)
 
-        # Trainable Readout weight matrix (W_out)
-        self.W_out = np.zeros((reservoir_dim, output_dim), dtype=np.float64)
+        # Trainable readout weight matrix.
+        self.W_out = np.zeros(
+            (reservoir_dim, output_dim),
+            dtype=np.float64,
+        )
 
-        # Initialize inverse correlation matrix P for stable online RLS tracking
-        self.P = np.eye(reservoir_dim, dtype=np.float64) / ridge
+        # Inverse correlation matrix used by online RLS.
+        self.P = np.eye(
+            reservoir_dim,
+            dtype=np.float64,
+        ) / ridge
 
     def _state(self, embedding: np.ndarray) -> np.ndarray:
-        """Projects a single input embedding into the recursive reservoir state space."""
+        """Projects a single input embedding into reservoir state space."""
         u = np.asarray(embedding, dtype=np.float64).reshape(-1)
 
         if u.shape != (self.input_dim,):
             raise ValueError(
-                f"Input dimension mismatch. Expected {(self.input_dim,)}, got {u.shape}"
+                f"Input dimension mismatch. "
+                f"Expected {(self.input_dim,)}, got {u.shape}"
             )
 
-        x = np.zeros(self.reservoir_dim, dtype=np.float64)
+        x = np.zeros(
+            self.reservoir_dim,
+            dtype=np.float64,
+        )
 
-        # Evolve the internal state trajectory through recurrent iterations
         for _ in range(self.iterations):
             pre_activation = self.W_in @ u + self.W_res @ x
             candidate = np.tanh(pre_activation)
-            x = (1.0 - self.leak_rate) * x + self.leak_rate * candidate
+            x = (
+                (1.0 - self.leak_rate) * x
+                + self.leak_rate * candidate
+            )
 
         return x
 
     def transform(self, embeddings: np.ndarray) -> np.ndarray:
-        """Transforms a batch of input embeddings into a matrix of reservoir states."""
-        embeddings = np.asarray(embeddings, dtype=np.float64)
+        """Transforms input embeddings into reservoir states."""
+        embeddings = np.asarray(
+            embeddings,
+            dtype=np.float64,
+        )
 
         if embeddings.ndim == 1:
             embeddings = embeddings.reshape(1, -1)
 
-        return np.vstack([self._state(e) for e in embeddings])
+        return np.vstack([
+            self._state(embedding)
+            for embedding in embeddings
+        ])
 
-    def fit(self, embeddings: np.ndarray, targets: np.ndarray):
-        """Executes a closed-form ridge regression to initialize the readout layer (W_out)."""
+    def fit(
+        self,
+        embeddings: np.ndarray,
+        targets: np.ndarray,
+    ):
+        """Initializes the readout layer using ridge regression."""
         states = self.transform(embeddings)
-        targets = np.asarray(targets, dtype=np.float64)
+        targets = np.asarray(
+            targets,
+            dtype=np.float64,
+        )
 
         A = states.T @ states
         B = states.T @ targets
-        regularizer = self.ridge * np.eye(self.reservoir_dim)
+        regularizer = (
+            self.ridge
+            * np.eye(self.reservoir_dim)
+        )
 
-        # Solve linear system equations securely: (A + lambda*I) * W_out = B
-        self.W_out = np.linalg.solve(A + regularizer, B)
-        self.P = np.linalg.inv(A + regularizer)
+        self.W_out = np.linalg.solve(
+            A + regularizer,
+            B,
+        )
+        self.P = np.linalg.inv(
+            A + regularizer
+        )
 
-    def predict_scores(self, embedding: np.ndarray) -> np.ndarray:
-        """Calculates raw, unnormalized routing logits for a given input vector."""
+    def predict_scores(
+        self,
+        embedding: np.ndarray,
+    ) -> np.ndarray:
+        """Calculates raw routing logits."""
         state = self._state(embedding)
         return state @ self.W_out
 
     @staticmethod
     def softmax(scores: np.ndarray) -> np.ndarray:
-        """Applies stable Softmax activation over logs with mathematical overflow protection."""
-        scores = scores - np.max(scores)  # Stabilize by offsetting max logit
+        """Applies numerically stable Softmax."""
+        scores = scores - np.max(scores)
         exp_scores = np.exp(scores)
         return exp_scores / np.sum(exp_scores)
 
     def route(self, embedding: np.ndarray) -> tuple:
-        """Executes the confidence-based dynamic routing assignment.
+        """Executes confidence-based dynamic routing.
 
         Returns
         -------
         tuple
             (selected_route, confidence, probabilities)
-            - selected_route (int): Index of chosen backend lane. Returns `-1`
-              if confidence drops below threshold (System 2 Escalation).
-            - confidence (float): Peak Softmax probability matching the chosen route.
-            - probabilities (np.ndarray): Full probability distribution across lanes.
+
+            selected_route:
+                Index of the selected backend lane, or -1 when
+                confidence is below the fallback threshold.
+
+            confidence:
+                Peak Softmax probability.
+
+            probabilities:
+                Full probability distribution across lanes.
         """
         scores = self.predict_scores(embedding)
         probabilities = self.softmax(scores)
@@ -176,55 +227,90 @@ class RCRouter:
         route = int(np.argmax(probabilities))
         confidence = float(probabilities[route])
 
-        # Confidence-based dynamic fallback loop to System 2
         if confidence < self.fallback_threshold:
             route = -1
 
         return route, confidence, probabilities
 
     def add_route(self) -> int:
-    """Appends a new output routing lane to the readout layer.
+        """Appends a new output routing lane to the readout layer.
 
-    Allows adding a new specialized model (Expert) without reservoir retraining.
-    """
-
-        Allows instant scaling for newly added specialized models (Experts) without reservoir retraining.
+        Allows adding a new specialized model (Expert) without
+        reservoir retraining.
 
         Returns
         -------
         int
             The newly assigned route lane index.
         """
-        self.W_out = np.hstack([self.W_out, np.zeros((self.reservoir_dim, 1), dtype=np.float64)])
+        self.W_out = np.hstack(
+            [
+                self.W_out,
+                np.zeros(
+                    (self.reservoir_dim, 1),
+                    dtype=np.float64,
+                ),
+            ]
+        )
+
         self.output_dim += 1
+
         return self.output_dim - 1
 
-    def rls_update(self, embedding: np.ndarray, target: np.ndarray, forgetting_factor: float = 0.98):
-        """Applies Recursive Least Squares (RLS) tracking to update weights online.
+    def rls_update(
+        self,
+        embedding: np.ndarray,
+        target: np.ndarray,
+        forgetting_factor: float = 0.98,
+    ):
+        """Applies Recursive Least Squares tracking to update readout weights.
 
         Parameters
         ----------
         embedding : np.ndarray
-            Semantic embedding vector of the processed query.
+            Semantic embedding vector.
         target : np.ndarray
-            Target vector representing idealized optimal lane weights.
+            Target vector representing the desired routing output.
         forgetting_factor : float
-            Exponential forgetting memory weights factor (0.9 <= forgetting_factor <= 1.0).
+            Exponential forgetting factor.
         """
+        if not 0.0 < forgetting_factor <= 1.0:
+            raise ValueError(
+                "forgetting_factor must be in the range (0.0, 1.0]."
+            )
+
         state = self._state(embedding).reshape(-1, 1)
-        target = np.asarray(target, dtype=np.float64).reshape(1, -1)
+
+        target = np.asarray(
+            target,
+            dtype=np.float64,
+        ).reshape(-1)
 
         if target.shape != (self.output_dim,):
             raise ValueError(
-                f"Target dimension {target.shape} does not match output_dim {self.output_dim}"
+                f"Target dimension {target.shape} "
+                f"does not match output_dim {self.output_dim}"
             )
+
+        target = target.reshape(1, -1)
+
         P_state = self.P @ state
-        denominator = forgetting_factor + (state.T @ P_state)
-        K = P_state / denominator  # Kalman gain vector
+        denominator = (
+            forgetting_factor
+            + state.T @ P_state
+        )
+
+        K = P_state / denominator
 
         prediction = state.T @ self.W_out
         error = target - prediction
 
-        # Online iterative adaptation of readout matrix and error covariance
+        # Online adaptation of the readout layer only.
         self.W_out += K @ error
-        self.P = (self.P - K @ state.T @ self.P) / forgetting_factor
+
+        # Update inverse correlation matrix.
+        self.P = (
+            self.P
+            - K @ state.T @ self.P
+        ) / forgetting_factor
+       
