@@ -208,8 +208,8 @@ class RCRouter:
         state = self._state(embedding).reshape(-1, 1)
         target = np.asarray(target, dtype=np.float64).reshape(1, -1)
 
-        if target.shape != self.output_dim:
-            raise ValueError(f"Target dimension {target.shape} does not match output_dim {self.output_dim}")
+        if target.shape != (self.output_dim,):
+   　　　 raise ValueError( f"Target dimension {target.shape} does not match output_dim {self.output_dim}")
 
         P_state = self.P @ state
         denominator = forgetting_factor + (state.T @ P_state)
