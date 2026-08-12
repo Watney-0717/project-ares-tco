@@ -185,7 +185,7 @@ class RCRouter:
     def add_route(self) -> int:
         """Appends a new output routing lane to the readout layer with zero downtime.
 
-        Allows instant scaling for newly added specialized models (Experts) under O(1).
+        Allows instant scaling for newly added specialized models (Experts) without reservoir retraining.
 
         Returns
         -------
