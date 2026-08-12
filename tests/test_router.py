@@ -15,9 +15,37 @@ def make_router():
     )
 
 
+def make_routable_router():
+    router = make_router()
+
+    embeddings = np.array(
+        [
+            [0.1, 0.2, 0.3, 0.4],
+            [0.4, 0.3, 0.2, 0.1],
+            [-0.1, -0.2, -0.3, -0.4],
+        ],
+        dtype=np.float64,
+    )
+
+    targets = np.array(
+        [
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+        ],
+        dtype=np.float64,
+    )
+
+    router.fit(embeddings, targets)
+    return router
+
+
 def test_state_accepts_correct_input_dimension():
     router = make_router()
-    embedding = np.array([0.1, 0.2, 0.3, 0.4], dtype=np.float64)
+    embedding = np.array(
+        [0.1, 0.2, 0.3, 0.4],
+        dtype=np.float64,
+    )
 
     state = router._state(embedding)
 
@@ -26,26 +54,51 @@ def test_state_accepts_correct_input_dimension():
 
 def test_state_rejects_wrong_input_dimension():
     router = make_router()
-    embedding = np.array([0.1, 0.2, 0.3], dtype=np.float64)
+    embedding = np.array(
+        [0.1, 0.2, 0.3],
+        dtype=np.float64,
+    )
 
-    with pytest.raises(ValueError, match="Input dimension mismatch"):
+    with pytest.raises(
+        ValueError,
+        match="Input dimension mismatch",
+    ):
         router._state(embedding)
 
 
 def test_rls_update_accepts_correct_target_dimension():
     router = make_router()
-    embedding = np.array([0.1, 0.2, 0.3, 0.4], dtype=np.float64)
-    target = np.array([1.0, 0.0, 0.0], dtype=np.float64)
+
+    embedding = np.array(
+        [0.1, 0.2, 0.3, 0.4],
+        dtype=np.float64,
+    )
+
+    target = np.array(
+        [1.0, 0.0, 0.0],
+        dtype=np.float64,
+    )
 
     router.rls_update(embedding, target)
 
 
 def test_rls_update_rejects_wrong_target_dimension():
     router = make_router()
-    embedding = np.array([0.1, 0.2, 0.3, 0.4], dtype=np.float64)
-    target = np.array([1.0, 0.0], dtype=np.float64)
 
-    with pytest.raises(ValueError, match="Target dimension"):
+    embedding = np.array(
+        [0.1, 0.2, 0.3, 0.4],
+        dtype=np.float64,
+    )
+
+    target = np.array(
+        [1.0, 0.0],
+        dtype=np.float64,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Target dimension",
+    ):
         router.rls_update(embedding, target)
 
 
@@ -59,56 +112,109 @@ def test_add_route_expands_readout_without_changing_reservoir():
 
     assert new_route == original_output_dim
     assert router.output_dim == original_output_dim + 1
-    assert router.W_out.shape == (8, original_output_dim + 1)
-    assert np.array_equal(router.W_res, original_w_res)
-    assert np.all(router.W_out[:, -1] == 0.0)
+    assert router.W_out.shape == (
+        8,
+        original_output_dim + 1,
+    )
+    assert np.array_equal(
+        router.W_res,
+        original_w_res,
+    )
+    assert np.all(
+        router.W_out[:, -1] == 0.0
+    )
 
 
 def test_route_returns_valid_route_and_confidence():
-    router = make_router()
-    embedding = np.array([0.1, 0.2, 0.3, 0.4], dtype=np.float64)
+    router = make_routable_router()
 
-    route, confidence, probabilities = router.route(embedding)
+    embedding = np.array(
+        [0.1, 0.2, 0.3, 0.4],
+        dtype=np.float64,
+    )
+
+    route, confidence, probabilities = router.route(
+        embedding
+    )
 
     assert route in range(router.output_dim)
     assert 0.0 <= confidence <= 1.0
-    assert probabilities.shape == (router.output_dim,)
+    assert probabilities.shape == (
+        router.output_dim,
+    )
+    assert np.isclose(
+        np.sum(probabilities),
+        1.0,
+    )
 
 
 def test_route_works_after_adding_route():
     router = make_router()
-    embedding = np.array([0.1, 0.2, 0.3, 0.4], dtype=np.float64)
 
     new_route = router.add_route()
 
-    route, confidence, probabilities = router.route(embedding)
+    assert new_route == 3
+    assert router.output_dim == 4
 
-    assert route in range(router.output_dim)
-    assert 0 <= route <= new_route
+    embedding = np.array(
+        [0.1, 0.2, 0.3, 0.4],
+        dtype=np.float64,
+    )
+
+    route, confidence, probabilities = router.route(
+        embedding
+    )
+
+    assert route == -1
     assert 0.0 <= confidence <= 1.0
-    assert probabilities.shape == (router.output_dim,)
+    assert probabilities.shape == (
+        router.output_dim,
+    )
 
 
 def test_rls_update_does_not_change_reservoir():
     router = make_router()
 
-    embedding = np.array([0.1, 0.2, 0.3, 0.4], dtype=np.float64)
-    target = np.array([1.0, 0.0, 0.0], dtype=np.float64)
+    embedding = np.array(
+        [0.1, 0.2, 0.3, 0.4],
+        dtype=np.float64,
+    )
+
+    target = np.array(
+        [1.0, 0.0, 0.0],
+        dtype=np.float64,
+    )
 
     original_w_res = router.W_res.copy()
     original_w_out = router.W_out.copy()
 
-    router.rls_update(embedding, target)
+    router.rls_update(
+        embedding,
+        target,
+    )
 
-    assert np.array_equal(router.W_res, original_w_res)
-    assert not np.array_equal(router.W_out, original_w_out)
+    assert np.array_equal(
+        router.W_res,
+        original_w_res,
+    )
+    assert not np.array_equal(
+        router.W_out,
+        original_w_out,
+    )
 
 
 def test_route_rejects_wrong_input_dimension():
     router = make_router()
-    embedding = np.array([0.1, 0.2, 0.3], dtype=np.float64)
 
-    with pytest.raises(ValueError, match="Input dimension mismatch"):
+    embedding = np.array(
+        [0.1, 0.2, 0.3],
+        dtype=np.float64,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Input dimension mismatch",
+    ):
         router.route(embedding)
 
 
@@ -116,8 +222,15 @@ def test_router_initialization_is_deterministic():
     router_a = make_router()
     router_b = make_router()
 
-    assert np.array_equal(router_a.W_res, router_b.W_res)
-    assert np.array_equal(router_a.W_out, router_b.W_out)
+    assert np.array_equal(
+        router_a.W_res,
+        router_b.W_res,
+    )
+
+    assert np.array_equal(
+        router_a.W_out,
+        router_b.W_out,
+    )
 
 
 def test_add_route_can_expand_multiple_times():
@@ -130,11 +243,58 @@ def test_add_route_can_expand_multiple_times():
     assert second_route == 4
     assert router.output_dim == 5
     assert router.W_out.shape == (8, 5)
-    assert np.all(router.W_out[:, first_route] == 0.0)
-    assert np.all(router.W_out[:, second_route] == 0.0)
+
+    assert np.all(
+        router.W_out[:, first_route] == 0.0
+    )
+
+    assert np.all(
+        router.W_out[:, second_route] == 0.0
+    )
 
 
+def test_rls_update_rejects_invalid_forgetting_factor():
+    router = make_router()
 
+    embedding = np.array(
+        [0.1, 0.2, 0.3, 0.4],
+        dtype=np.float64,
+    )
+
+    target = np.array(
+        [1.0, 0.0, 0.0],
+        dtype=np.float64,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="forgetting_factor",
+    ):
+        router.rls_update(
+            embedding,
+            target,
+            forgetting_factor=0.0,
+        )
+
+
+def test_fitted_router_can_select_a_route():
+    router = make_routable_router()
+
+    embedding = np.array(
+        [0.1, 0.2, 0.3, 0.4],
+        dtype=np.float64,
+    )
+
+    route, confidence, probabilities = router.route(
+        embedding
+    )
+
+    assert route >= 0
+    assert route < router.output_dim
+    assert confidence >= router.fallback_threshold
+    assert probabilities.shape == (
+        router.output_dim,
+    )
 
 
 
