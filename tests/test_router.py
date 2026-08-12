@@ -47,3 +47,18 @@ def test_rls_update_rejects_wrong_target_dimension():
 
     with pytest.raises(ValueError, match="Target dimension"):
         router.rls_update(embedding, target)
+
+
+def test_add_route_expands_readout_without_changing_reservoir():
+    router = make_router()
+
+    original_w_res = router.W_res.copy()
+    original_output_dim = router.output_dim
+
+    new_route = router.add_route()
+
+    assert new_route == original_output_dim
+    assert router.output_dim == original_output_dim + 1
+    assert router.W_out.shape == (8, original_output_dim + 1)
+    assert np.array_equal(router.W_res, original_w_res)
+    assert np.all(router.W_out[:, -1] == 0.0)
