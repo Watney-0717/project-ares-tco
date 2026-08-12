@@ -69,8 +69,8 @@ Unlike traditional classification networks or LLM-based gateways, Ares-TCO deplo
 
 1. **Sub-Millisecond Overhead**
    * Since the internal recurrent weights (\(W_{res}\)) are fixed and frozen, state transitions operate within a fraction of a millisecond even on pure CPU environments. The router will never become a new operational bottleneck.
-2. **Zero-Downtime Scalability (Dynamic Readout Expansion)**
-   * When a new specialized model (Expert) is added to your infrastructure, you do *not* need to retrain the entire router network. You simply append a new slot to the linear readout layer (\(W_{out}\)) seamlessly.
+2. **No-Retraining Scalability (Dynamic Readout Expansion)**
+   * When a new specialized model (Expert) is added to your infrastructure, you do *not* need to retrain the entire router network. You simply append a new slot to the linear readout layer (\(W_{out}\)).
 3. **Continuous Online Adaptation via RLS**
    * The readout layer can safely adapt to shifting user traffic distribution in real-time using Recursive Least Squares (RLS) tracking, matching live performance feedback without catastrophic forgetting.
 
