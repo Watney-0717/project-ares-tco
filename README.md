@@ -30,7 +30,7 @@ Inspired by Daniel Kahneman's Dual-Process Theory in cognitive science, Ares-TCO
 By leveraging an edge-side, ultra-small Embedding engine and confidence scoring (Softmax metrics), Ares-TCO dynamically offloads traffic across multiple distinct compute lanes:
 
 ```text
-                        [ User Input Query ]
+                [ User Input Query ]
                                  │
                                  ▼
         ┌──────────────────────────────────────────────────┐
@@ -45,20 +45,20 @@ By leveraging an edge-side, ultra-small Embedding engine and confidence scoring 
    │ [Confidence:  │ [Confidence:    │ [Confidence:  │ [Confidence:  │ [Ambiguity /
    │  Ultra-High]  │  High]          │  Medium]      │  Low]         │  Edge-Case]
    ▼               ▼                 ▼               ▼               ▼
-┌───────────┐   ┌───────────┐     ┌───────────┐   ┌───────────┐   ┌───────────────────────┐
-│① Semantic │   │② Ultra-   │     │③ Light    │   │④ Mid-Tier │   │The Final Defense Line:│
-│   Cache   │   │   Light   │     │Specialist │   │  General  │   │System 2               │
-│   (Hit)   │   │ Local LLM │     │  Models   │   │   LLM     │   │(Intent Classifier LLM)│
-└───────────┘   │ (1B-Class)│     │(RAG/Trans)│   │ (8B-Class)│   └───────────┬───────────┘
- (Bypass full   └───────────┘     │(Task-specific│ └───────────┘               │
-  NN inference)  (On-device      │ optimization)│ (Summarization/              │
-                  execution)      └─────────────┘  complex structures)          │
-                                                                       │
-                                                                       ▼
-                                                               ┌───────────────────────┐
-                                                               │⑤ Frontier Reasoning   │
-                                                               │   Model (o1 / R1)     │
-                                                               └───────────────────────┘
+┌───────────┐   ┌───────────┐   ┌───────────┐   ┌───────────┐   ┌───────────────────────┐
+│① Semantic │   │② Ultra-   │   │③ Light    │   │④ Mid-Tier │   │The Final Defense Line:│
+│   Cache   │   │   Light   │   │Specialist │   │  General  │   │System 2               │
+│   (Hit)   │   │ Local LLM │   │  Models   │   │   LLM     │   │(Intent Classifier LLM)│
+└───────────┘   │ (1B-Class)│   │(RAG/Trans)│   └───────────┘   └───────────┬───────────┘
+                └───────────┘   └───────────┘                               │
+ (Bypass full      (On-device)    (Task-specific)    (Summarization/        │
+  NN inference)     execution)     optimization)      complex structures)   │
+                                                                            │
+                                                                            ▼
+                                                                    ┌───────────────────────┐
+                                                                    │⑤ Frontier Reasoning   │
+                                                                    │   Model (o1 / R1)     │
+                                                                    └───────────────────────┘
 
 The exact number and configuration of backend lanes are implementation-dependent. The architecture is designed to support heterogeneous compute tiers rather than requiring a fixed set of models.
 
