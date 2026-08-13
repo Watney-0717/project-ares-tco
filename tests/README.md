@@ -1,90 +1,100 @@
-markdown# Tests & Experimental Evaluation Schema
-> **Standardized Data Schemas, Metric Trackers, and Audit Log Specifications for Project Ares-TCO**
+markdown# 
+# System 1 → System 2 Architecture Robustness Test
 
-This directory establishes the strict mathematical and relational data models required to empirically validate the routing accuracy, TCO reduction rates, and quality preservation of the Ares-TCO framework (specifically, System 1: RC Router). 
+## Purpose
 
-By standardizing these schemas, we ensure perfect experimental reproducibility and eliminate subjective bias from the evaluation pipeline.
+This experiment evaluates the structural viability of the
+System 1 → System 2 architecture.
 
----
+It does not estimate production performance or select a production
+threshold.
 
-## 📊 1. Relational Data Models (Data Schema)
+The experiment tests whether a viable quality/cost operating region
+remains when S1 error, S2 error, S1 coverage, and S2/S1 relative cost
+are varied.
 
-To seamlessly feed empirical performance metrics into the mathematical cost equations defined in Chapter 6 and 7 of the White Paper, all experimental evaluations must strictly adhere to the following two relational data models.
+## Method
 
-### ① Query Dataset Matrix (`query_dataset.json` / `.csv`)
-This matrix contains the evaluation queries used to measure the generalization capabilities of the RC Router. It spans 12 distinct contextual categories, 4 asymmetric difficulty levels, and a rigid 3-way split (Train / Val / Test) to eliminate data leakage flaws.
+System 1 handles accepted queries.
 
-| Column Name | Type | Description | Operational Example |
-| :--- | :--- | :--- | :--- |
-| `query_id` | VARCHAR | Globally unique identifier for each query (Primary Key). | `"001"`, `"004"` |
-| `query` | TEXT | The raw input prompt delivered to the AI system. | `"Hello"`, `"Construct a long-form proof..."` |
-| `category` | VARCHAR | Contextual domain classification (12 total categories). | `"conversation"`, `"reasoning"`, `"legal"` |
-| `difficulty` | VARCHAR | Presumed computational complexity of the query. | `"easy"`, `"medium"`, `"hard"防"`, `"very_hard"` |
-| `split` | VARCHAR | The designated subset allocation for ML validation. | `"train"`, `"validation"`, `"test"` |
+System 2 handles delegated queries. Delegation is normal System 2
+processing, not a routing failure.
 
-### ② Backend Evaluation Metrics (`backend_evaluation.json` / `.csv`)
-This matrix logs the **empirical ground-truth performance metrics** harvested by executing *all* available backend tiers against every single query in the dataset.
+Overall error:
 
-| Column Name | Type | Description | Operational Example |
-| :--- | :--- | :--- | :--- |
-| `query_id` | VARCHAR | Foreign key referencing the unique identifier in the dataset. | `"001"` |
-| `backend_id` | VARCHAR | The specific compute backend tier evaluated. | `"small"`, `"medium"`, `"reasoning"` |
-| `quality` | FLOAT | Response fidelity score (0.0 to 1.0, via LLM-as-a-Judge/evals). | `0.98` (Small), `0.99` (Reasoning) |
-| `cost` | FLOAT | Precise financial overhead per individual inference task (USD). | `0.0010` (Small), `0.0320` (Reasoning) |
-| `latency` | FLOAT | End-to-end execution time elapsed for response generation (ms).| `80.2` (Small), `850.3` (Reasoning) |
+    Overall Error =
+        S1 Coverage × S1 Error
+        + S2 Delegation × S2 Error
 
----
+Hybrid normalized cost:
 
-## 🎯 2. Algorithmic Definition of the "Optimal Route"
+    Hybrid Cost =
+        S1 Coverage
+        + S2 Delegation × (S2/S1 Cost)
 
-Project Ares-TCO rejects arbitrary human-labeled routing targets. The ground-truth "Optimal Route" for each `query_id` is derived dynamically and programmatically from the recorded empirical data using the following constraint algorithm:
+Cost saving:
 
-```text
-[Optimization Algorithm]
-1. Isolate all rows matching a specific `query_id` within the `backend_evaluation` matrix.
-2. Filter out any `backend_id` that fails to satisfy the enterprise SLA quality boundary 
-   (e.g., where Quality < Q_threshold; default Q_threshold = 0.85).
-3. From the remaining subset, select the single `backend_id` that achieves the minimum `cost`. 
-   This index is flagged as the mathematical "Optimal Route" for that specific workload.
-```
+    Saving =
+        1 - Hybrid Cost / (S2/S1 Cost)
 
-By framing the target definition as a cost-minimization problem bound by an external quality constraint, we establish a completely objective foundation to compute the router's exact allocation accuracy.
+The robustness scan varies:
 
----
+- S1 error: 5–25%
+- S2 error: 0–15%
+- S1 scaling: 0.75–2.00x
+- S2/S1 cost: 2–50x
+- Router operating points: measured structural router curve
 
-## 📝 3. Standardized Audit Log Template
+## Results
 
-Upon the completion of any experimental iteration, authors are required to populate an industrial audit report named `evaluation_report.md` within this directory, strictly adhering to the following Markdown format:
+### Quality robustness
 
-```markdown
-# Ares-TCO Experimental Evaluation Report
+Best achievable overall error across the tested structural operating
+points:
 
-- **Execution Date**: 2026-08-12
-- **Hardware Architecture**: CPU: AMD Ryzen 9 7950X / Python: 3.11.4 / NumPy: 1.24.3
-- **Edge Vectorizer**: INT8-Quantized MiniLM-L6-v2 (ONNX, 384-dimensional)
-- **Dataset Scale (N)**: 10,000 queries (Strict Test Split Partition)
+| S1 \ S2 | 0% | 1% | 2% | 5% | 10% | 15% |
+|---:|---:|---:|---:|---:|---:|---:|
+| 5%  | 1.40% | 2.12% | 2.84% | 5.00% | 5.30% | 5.59% |
+| 10% | 2.80% | 3.52% | 4.24% | 6.40% | 10.00% | 10.30% |
+| 15% | 4.20% | 4.92% | 5.64% | 7.80% | 11.40% | 15.00% |
+| 20% | 5.60% | 6.32% | 7.04% | 9.20% | 12.80% | 16.40% |
+| 25% | 7.00% | 7.72% | 8.44% | 10.60% | 14.20% | 17.80% |
 
-## 1. ROUTING METRICS
-* **Routing Accuracy**: XX.X % (Ratio of queries where router selection matched the mathematical Optimal Route)
-* **Unsafe Routing Rate**: X.X % (Ratio of traffic routed to a backend failing to cross the required \(Q_{\text{threshold}}\))
-* **Fallback Rate**: X.X % (Frequency of ambiguous workloads safely escalated to the System 2 fallback cascade)
-* **Over-routing Rate**: X.X % (Ratio of queries assigned to a premium tier when a low-cost tier satisfied the SLA)
+### Cost robustness
 
-## 2. QUALITY ASSURANCE
-* **Baseline Quality**: X.XXX (Mean quality score under uniform max-tier reasoning configuration)
-* **Ares-TCO Quality**: X.XXX (Mean quality score under multi-tier framework distribution)
-* **Quality Preservation**: XX.X % (Ares Quality / Baseline Quality)
+| S2/S1 Cost | Saving |
+|---:|---:|
+| 2x  | 47.05% |
+| 5x  | 75.28% |
+| 10x | 84.69% |
+| 20x | 89.39% |
+| 50x | 92.22% |
 
-## 3. ECONOMIC TCO METRICS
-* **Cost_baseline (Monolithic Total Expenses)**: \$ X,XXX.XX
-* **Cost_Ares (Orchestrated Total Expenses)**: \$ XXX.XX  *(Includes all ONNX extraction and RC Router overhead)*
-* **Net Cost Reduction**: **XX.X %**
+### Quality-constrained robustness
 
-## 4. PERFORMANCE OVERHEAD
-* **Embedding Extraction Delay**: X.XX ms
-* **RC Router Computation Latency**: X.XX ms
-* **Total Routing Overhead**: **X.XX ms**
+Under an overall-error constraint of 5%, feasible operating points
+remain even when S1 error is scaled to 2.00x, provided S2 error is 5%.
 
-## 5. CONCLUSION
-Deploying the Ares-TCO autonomous framework achieved a net infrastructure TCO reduction of **【XX.X %】** while successfully preserving **【XX.X %】** of the peak frontier quality baseline. The confidence-gated cascade successfully mitigated catastrophic allocation failure (Unsafe Routing), confining the risk frequency to a negligible **【X.X %】**, proving the empirical readiness of the System 1 architecture.
-```
+At that point:
+
+- S1 coverage: 38.80%
+- S2 delegation: 61.20%
+- Overall error: 4.86%
+
+Under a 10% overall-error constraint, feasible regions remain across
+the full tested S1 scaling range and S2 error through 10%.
+
+## Conclusion
+
+The tested System 1 → System 2 architecture retains a non-trivial
+quality/cost feasibility region across a broad range of S1 error,
+S2 error, and relative cost assumptions.
+
+The experiment therefore supports the structural viability of the
+architecture.
+
+No production accuracy, production cost, or production threshold is
+claimed by this experiment.
+
+
+
